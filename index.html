@@ -2,47 +2,90 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Химия 8 класс - Игра</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Химия 8 класс</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
     <style>
         :root { --primary: #4A90E2; --bg: #F5F7FA; --text: #333333; --card: #FFFFFF; --success: #2ECC71; --error: #E74C3C; }
-        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: var(--bg); color: var(--text); margin: 0; padding: 10px; display: flex; flex-direction: column; align-items: center; }
-        .container { background-color: var(--card); border-radius: 12px; padding: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); max-width: 400px; width: 100%; text-align: center; box-sizing: border-box; margin-bottom: 20px; }
-        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; font-weight: bold; font-size: 14px;}
-        .streak { color: #F39C12; }
-        .question { font-size: 20px; font-weight: bold; margin: 20px 0; color: var(--primary); }
+        body { font-family: -apple-system, sans-serif; background-color: var(--bg); color: var(--text); margin: 0; padding: 15px; display: flex; flex-direction: column; align-items: center; }
+        .container { background-color: var(--card); border-radius: 12px; padding: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); width: 100%; max-width: 400px; box-sizing: border-box; margin-bottom: 20px; }
+        .header { display: flex; justify-content: space-between; font-weight: bold; margin-bottom: 15px; font-size: 14px; border-bottom: 1px solid #eee; padding-bottom: 10px; }
+        .question { font-size: 20px; font-weight: bold; margin: 20px 0; color: var(--primary); text-align: center; }
         .options { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-        .btn { background-color: var(--bg); border: 2px solid var(--primary); color: var(--primary); padding: 12px; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; transition: 0.2s; }
-        .btn:hover { background-color: var(--primary); color: white; }
+        .btn { background-color: var(--bg); border: 2px solid var(--primary); color: var(--primary); padding: 15px; border-radius: 8px; font-size: 18px; font-weight: bold; cursor: pointer; transition: 0.2s; }
+        .btn:active { transform: scale(0.95); }
         .btn.correct { background-color: var(--success); border-color: var(--success); color: white; }
         .btn.wrong { background-color: var(--error); border-color: var(--error); color: white; }
-        input { width: 100%; padding: 10px; margin-bottom: 10px; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box; }
-        .hidden { display: none; }
+        .leaderboard-title { text-align: center; font-weight: bold; margin-bottom: 10px; color: var(--primary); }
+        .leaderboard-item { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #eee; font-size: 14px; }
+        .leaderboard-item:last-child { border-bottom: none; }
+        .my-score { font-weight: bold; color: var(--primary); }
     </style>
 </head>
 <body>
 
-    <div class="container" id="auth-block">
-        <h3>Вход в систему</h3>
-        <input type="text" id="login-input" placeholder="Введите ваш никнейм">
-        <button class="btn" style="width: 100%;" onclick="login()">Играть</button>
-    </div>
-
-    <div class="container hidden" id="game-block">
+    <div class="container" id="game-block">
         <div class="header">
-            <span>Профиль: <span id="current-user" style="color:var(--primary)"></span><br>Очки: <span id="score">0</span></span>
-            <span class="streak">Огонек: <span id="streak">1</span> дн.</span>
+            <span id="user-name">Загрузка...</span>
+            <span>Очки: <span id="score">0</span></span>
         </div>
-
-        <div style="font-size: 14px; color: #666;">Глава I. Знаки химических элементов</div>
-        <div class="question" id="question-text">Загрузка...</div>
+        <div style="font-size: 12px; color: #666; text-align: center;">Глава I. Знаки химических элементов</div>
+        <div class="question" id="question-text">Подготовка вопросов...</div>
         <div class="options" id="options-container"></div>
     </div>
 
+    <div class="container" id="leaderboard-block">
+        <div class="leaderboard-title">Топ игроков</div>
+        <div id="leaderboard-list">Загрузка рейтинга...</div>
+    </div>
+
     <script>
-        let currentUser = localStorage.getItem('username');
-        let score = parseInt(localStorage.getItem('score')) || 0;
-        let currentCorrectElement = null;
+        const firebaseConfig = {
+            apiKey: "AIzaSyAzsKMeV8PDmz6Pt3qjF_Kc2NJAbbRJdLQ",
+            authDomain: "physics8-468dd.firebaseapp.com",
+            databaseURL: "https://physics8-468dd-default-rtdb.europe-west1.firebasedatabase.app",
+            projectId: "physics8-468dd",
+            storageBucket: "physics8-468dd.firebasestorage.app",
+            messagingSenderId: "259509484645",
+            appId: "1:259509484645:web:97b9d8c75ed9d297ca5a8c"
+        };
+        
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
+        const tg = window.Telegram.WebApp;
+        tg.expand();
+        let user = tg.initDataUnsafe.user;
+        let userId = user ? user.id : 'test_user_' + Math.floor(Math.random() * 1000);
+        let userName = user ? user.first_name : 'Гость';
+        let currentScore = 0;
+
+        document.getElementById('user-name').innerText = userName;
+
+        db.ref('users/' + userId).once('value').then((snapshot) => {
+            const data = snapshot.val();
+            if (data) {
+                currentScore = data.score || 0;
+            } else {
+                saveScore(0);
+            }
+            document.getElementById('score').innerText = currentScore;
+            generateQuestion();
+        }).catch((error) => {
+            document.getElementById('question-text').innerText = "Ошибка БД. Проверьте правила (Rules) в Firebase.";
+        });
+
+        function saveScore(newScore) {
+            currentScore = newScore;
+            document.getElementById('score').innerText = currentScore;
+            db.ref('users/' + userId).set({
+                name: userName,
+                score: currentScore,
+                timestamp: firebase.database.ServerValue.TIMESTAMP
+            });
+        }
 
         const elements = [
             { symbol: 'H', name: 'Водород' }, { symbol: 'O', name: 'Кислород' },
@@ -50,36 +93,18 @@
             { symbol: 'Fe', name: 'Железо' }, { symbol: 'C', name: 'Углерод' },
             { symbol: 'N', name: 'Азот' }, { symbol: 'Ca', name: 'Кальций' }
         ];
+        let correctElement = null;
 
-        if(currentUser) startGame();
-
-        function login() {
-            const input = document.getElementById('login-input').value.trim();
-            if(!input) return;
-            currentUser = input;
-            localStorage.setItem('username', currentUser);
-            localStorage.setItem('score', score);
-            startGame();
-        }
-
-        function startGame() {
-            document.getElementById('auth-block').classList.add('hidden');
-            document.getElementById('game-block').classList.remove('hidden');
-            document.getElementById('current-user').innerText = "@" + currentUser;
-            document.getElementById('score').innerText = score;
-            generateQuestion();
-        }
-
-        function getRandomElement(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+        function getRandom(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
 
         function generateQuestion() {
-            currentCorrectElement = getRandomElement(elements);
-            document.getElementById('question-text').innerText = `Символ элемента "${currentCorrectElement.name}"?`;
+            correctElement = getRandom(elements);
+            document.getElementById('question-text').innerText = `Какой символ у элемента "${correctElement.name}"?`;
 
-            let options = [currentCorrectElement];
+            let options = [correctElement];
             while(options.length < 4) {
-                let randomOption = getRandomElement(elements);
-                if(!options.includes(randomOption)) options.push(randomOption);
+                let rnd = getRandom(elements);
+                if(!options.includes(rnd)) options.push(rnd);
             }
             options.sort(() => Math.random() - 0.5);
 
@@ -95,22 +120,41 @@
             });
         }
 
-        function checkAnswer(selected, btnElement) {
+        function checkAnswer(selected, btn) {
             const allBtns = document.querySelectorAll('.btn');
             allBtns.forEach(b => b.disabled = true);
 
-            if(selected.symbol === currentCorrectElement.symbol) {
-                btnElement.classList.add('correct');
-                score += 10;
+            if(selected.symbol === correctElement.symbol) {
+                btn.classList.add('correct');
+                saveScore(currentScore + 10);
+                if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
             } else {
-                btnElement.classList.add('wrong');
-                score = Math.max(0, score - 5);
+                btn.classList.add('wrong');
+                saveScore(Math.max(0, currentScore - 5));
+                if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('error');
+                
+                allBtns.forEach(b => {
+                    if(b.innerText === correctElement.symbol) b.classList.add('correct');
+                });
             }
-
-            localStorage.setItem('score', score);
-            document.getElementById('score').innerText = score;
-            setTimeout(generateQuestion, 1000);
+            setTimeout(generateQuestion, 1200);
         }
+
+        db.ref('users').orderByChild('score').limitToLast(10).on('value', (snapshot) => {
+            const list = document.getElementById('leaderboard-list');
+            list.innerHTML = '';
+            let leaders = [];
+            snapshot.forEach(child => { leaders.push({id: child.key, ...child.val()}); });
+            leaders.reverse();
+
+            leaders.forEach((l, index) => {
+                const div = document.createElement('div');
+                div.className = 'leaderboard-item';
+                if(l.id === String(userId)) div.classList.add('my-score');
+                div.innerHTML = `<span>${index + 1}. ${l.name}</span> <span>${l.score}</span>`;
+                list.appendChild(div);
+            });
+        });
     </script>
 </body>
 </html>
