@@ -15,15 +15,13 @@
         .nav-btn.active { background: var(--primary); color: white; }
         .tab-content { display: none; background: var(--card); border-radius: 12px; padding: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
         .tab-content.active { display: block; }
-        /* Игра */
         .header { display: flex; justify-content: space-between; font-weight: bold; border-bottom: 1px solid #eee; padding-bottom: 10px; margin-bottom: 15px; }
         .question { font-size: 20px; font-weight: bold; margin: 20px 0; color: var(--primary); text-align: center; }
         .options { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-        .btn { background-color: var(--bg); border: 2px solid var(--primary); color: var(--primary); padding: 15px; border-radius: 8px; font-size: 18px; font-weight: bold; cursor: pointer; transition: 0.2s; }
+        .btn { background-color: var(--bg); border: 2px solid var(--primary); color: var(--primary); padding: 15px; border-radius: 8px; font-size: 15px; font-weight: bold; cursor: pointer; transition: 0.2s; }
         .btn:active { transform: scale(0.95); }
         .btn.correct { background-color: var(--success); border-color: var(--success); color: white; }
         .btn.wrong { background-color: var(--error); border-color: var(--error); color: white; }
-        /* Лидеры и Друзья */
         .list-item { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #eee; font-size: 15px; align-items: center; }
         .list-item:last-child { border-bottom: none; }
         .my-score { font-weight: bold; color: var(--primary); background: #f0f8ff; border-radius: 5px; padding: 5px; }
@@ -47,7 +45,7 @@
             <span id="user-name">Проверка Telegram...</span>
             <span>Очки: <span id="score">0</span></span>
         </div>
-        <div style="font-size: 12px; color: #666; text-align: center;">Глава I. Знаки химических элементов</div>
+        <div style="font-size: 12px; color: #666; text-align: center;">Курс неорганической химии</div>
         <div class="question" id="question-text">Загрузка вопросов...</div>
         <div class="options" id="options-container"></div>
     </div>
@@ -119,7 +117,7 @@
                 if (data) {
                     currentScore = data.score || 0;
                 } else {
-                    notifyAdmin(userName, userId); // Уведомляем создателя о новичке
+                    notifyAdmin(userName, userId); 
                     saveScore(0);
                 }
                 document.getElementById('score').innerText = currentScore;
@@ -127,7 +125,6 @@
                 loadFriends();
             }).catch(e => console.log("Ошибка загрузки БД", e));
 
-            // Загрузка глобального рейтинга
             db.ref('users').orderByChild('score').limitToLast(20).on('value', (snapshot) => {
                 const list = document.getElementById('leaderboard-list');
                 list.innerHTML = '';
@@ -151,7 +148,7 @@
             fetch(url, {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ chat_id: ADMIN_ID, text: `🎉 В игру зашел новый игрок!\nИмя: ${newUserName}\nID: ${newUserId}` })
+                body: JSON.stringify({ chat_id: ADMIN_ID, text: `Новый игрок: ${newUserName} (ID: ${newUserId})` })
             }).catch(e => console.log(e));
         }
 
@@ -167,29 +164,43 @@
             }
         }
 
-        // Логика вопросов
-        const elements = [
-            { symbol: 'H', name: 'Водород' }, { symbol: 'O', name: 'Кислород' },
-            { symbol: 'Na', name: 'Натрий' }, { symbol: 'Cl', name: 'Хлор' },
-            { symbol: 'Fe', name: 'Железо' }, { symbol: 'C', name: 'Углерод' },
-            { symbol: 'N', name: 'Азот' }, { symbol: 'Ca', name: 'Кальций' },
-            { symbol: 'K', name: 'Калий' }, { symbol: 'Cu', name: 'Медь' },
-            { symbol: 'Ag', name: 'Серебро' }, { symbol: 'Au', name: 'Золото' }
+        // Расширенная база вопросов по курсу химии
+        const questions = [
+            { text: 'Какой химический символ у кислорода?', correct: 'O', wrong: ['C', 'H', 'N'] },
+            { text: 'Какой химический символ у водорода?', correct: 'H', wrong: ['He', 'O', 'C'] },
+            { text: 'Укажите химическую формулу воды.', correct: 'H2O', wrong: ['HO2', 'H2O2', 'OH'] },
+            { text: 'Какой газ мы выдыхаем?', correct: 'CO2', wrong: ['O2', 'N2', 'CO'] },
+            { text: 'Формула поваренной соли?', correct: 'NaCl', wrong: ['Na2CO3', 'NaOH', 'HCl'] },
+            { text: 'Чему равна валентность водорода?', correct: 'I', wrong: ['II', 'III', 'IV'] },
+            { text: 'Чему равна валентность кислорода в оксидах?', correct: 'II', wrong: ['I', 'III', 'IV'] },
+            { text: 'Частица с положительным зарядом?', correct: 'Протон', wrong: ['Электрон', 'Нейтрон', 'Атом'] },
+            { text: 'Частица с отрицательным зарядом?', correct: 'Электрон', wrong: ['Протон', 'Нейтрон', 'Ядро'] },
+            { text: 'Из чего состоит ядро атома?', correct: 'Протоны и нейтроны', wrong: ['Только протоны', 'Только электроны', 'Протоны и электроны'] },
+            { text: 'Реакция вещества с кислородом?', correct: 'Горение', wrong: ['Восстановление', 'Нейтрализация', 'Разложение'] },
+            { text: 'Какое из веществ является простым?', correct: 'O2 (Кислород)', wrong: ['H2O (Вода)', 'CO2', 'NaCl'] },
+            { text: 'Какое явление относится к химическим?', correct: 'Ржавление', wrong: ['Таяние льда', 'Испарение', 'Замерзание'] },
+            { text: 'Какой элемент обозначается как Fe?', correct: 'Железо', wrong: ['Фтор', 'Фосфор', 'Франций'] },
+            { text: 'Какой элемент обозначается как Na?', correct: 'Натрий', wrong: ['Неон', 'Азот', 'Никель'] },
+            { text: 'Какой элемент обозначается как Au?', correct: 'Золото', wrong: ['Серебро', 'Аргон', 'Алюминий'] },
+            { text: 'Какой элемент обозначается как Ag?', correct: 'Серебро', wrong: ['Золото', 'Аргон', 'Мышьяк'] },
+            { text: 'Газ, составляющий основу воздуха?', correct: 'Азот', wrong: ['Кислород', 'Углекислый газ', 'Водород'] },
+            { text: 'Формула серной кислоты?', correct: 'H2SO4', wrong: ['HCl', 'HNO3', 'H2S'] },
+            { text: 'Что образуется при реакции кислоты и основания?', correct: 'Соль и вода', wrong: ['Оксид и водород', 'Два оксида', 'Кислота'] },
+            { text: 'Тип реакции: 2H2 + O2 = 2H2O', correct: 'Соединение', wrong: ['Разложение', 'Замещение', 'Обмен'] },
+            { text: 'Вещества, ускоряющие реакцию?', correct: 'Катализаторы', wrong: ['Ингибиторы', 'Оксиды', 'Реагенты'] },
+            { text: 'Какой элемент самый легкий?', correct: 'Водород', wrong: ['Гелий', 'Литий', 'Углерод'] },
+            { text: 'Атомы с разным числом нейтронов?', correct: 'Изотопы', wrong: ['Ионы', 'Молекулы', 'Протоны'] },
+            { text: 'Сложное вещество — это...', correct: 'Вода', wrong: ['Водород', 'Кислород', 'Азот'] }
         ];
-        let correctElement = null;
-
-        function getRandom(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+        
+        let currentQuestion = null;
 
         function generateQuestion() {
             if(!userId) return;
-            correctElement = getRandom(elements);
-            document.getElementById('question-text').innerText = `Какой символ у элемента "${correctElement.name}"?`;
+            currentQuestion = questions[Math.floor(Math.random() * questions.length)];
+            document.getElementById('question-text').innerText = currentQuestion.text;
 
-            let options = [correctElement];
-            while(options.length < 4) {
-                let rnd = getRandom(elements);
-                if(!options.includes(rnd)) options.push(rnd);
-            }
+            let options = [currentQuestion.correct, ...currentQuestion.wrong];
             options.sort(() => Math.random() - 0.5);
 
             const container = document.getElementById('options-container');
@@ -198,7 +209,7 @@
             options.forEach(opt => {
                 const btn = document.createElement('button');
                 btn.className = 'btn';
-                btn.innerText = opt.symbol;
+                btn.innerText = opt;
                 btn.onclick = () => checkAnswer(opt, btn);
                 container.appendChild(btn);
             });
@@ -208,7 +219,7 @@
             const allBtns = document.querySelectorAll('#options-container .btn');
             allBtns.forEach(b => b.disabled = true);
 
-            if(selected.symbol === correctElement.symbol) {
+            if(selected === currentQuestion.correct) {
                 btn.classList.add('correct');
                 saveScore(currentScore + 10);
                 if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
@@ -217,10 +228,10 @@
                 saveScore(Math.max(0, currentScore - 5));
                 if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('error');
                 allBtns.forEach(b => {
-                    if(b.innerText === correctElement.symbol) b.classList.add('correct');
+                    if(b.innerText === currentQuestion.correct) b.classList.add('correct');
                 });
             }
-            setTimeout(generateQuestion, 1200);
+            setTimeout(generateQuestion, 1500);
         }
 
         // Система друзей
@@ -265,7 +276,7 @@
         }
 
         function startDuel() {
-            tg.showAlert("Модуль подбора игроков в разработке! Скоро вы сможете вызывать друзей на химические дуэли.");
+            tg.showAlert("Модуль подбора игроков в разработке.");
         }
 
         // Логика переключения вкладок
