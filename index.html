@@ -9,36 +9,70 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
     <style>
         :root { --primary: #4A90E2; --bg: #F5F7FA; --text: #333333; --card: #FFFFFF; --success: #2ECC71; --error: #E74C3C; }
-        body { font-family: -apple-system, sans-serif; background-color: var(--bg); color: var(--text); margin: 0; padding: 15px; display: flex; flex-direction: column; align-items: center; }
-        .container { background-color: var(--card); border-radius: 12px; padding: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); width: 100%; max-width: 400px; box-sizing: border-box; margin-bottom: 20px; }
-        .header { display: flex; justify-content: space-between; font-weight: bold; margin-bottom: 15px; font-size: 14px; border-bottom: 1px solid #eee; padding-bottom: 10px; }
+        body { font-family: -apple-system, sans-serif; background-color: var(--bg); color: var(--text); margin: 0; padding: 10px; }
+        .nav { display: flex; justify-content: space-between; background: var(--card); border-radius: 12px; padding: 5px; margin-bottom: 15px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        .nav-btn { flex: 1; text-align: center; padding: 10px; font-weight: bold; color: #888; border-radius: 8px; cursor: pointer; transition: 0.2s; }
+        .nav-btn.active { background: var(--primary); color: white; }
+        .tab-content { display: none; background: var(--card); border-radius: 12px; padding: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        .tab-content.active { display: block; }
+        /* Игра */
+        .header { display: flex; justify-content: space-between; font-weight: bold; border-bottom: 1px solid #eee; padding-bottom: 10px; margin-bottom: 15px; }
         .question { font-size: 20px; font-weight: bold; margin: 20px 0; color: var(--primary); text-align: center; }
         .options { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
         .btn { background-color: var(--bg); border: 2px solid var(--primary); color: var(--primary); padding: 15px; border-radius: 8px; font-size: 18px; font-weight: bold; cursor: pointer; transition: 0.2s; }
         .btn:active { transform: scale(0.95); }
         .btn.correct { background-color: var(--success); border-color: var(--success); color: white; }
         .btn.wrong { background-color: var(--error); border-color: var(--error); color: white; }
-        .leaderboard-title { text-align: center; font-weight: bold; margin-bottom: 10px; color: var(--primary); }
-        .leaderboard-item { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #eee; font-size: 14px; }
-        .leaderboard-item:last-child { border-bottom: none; }
-        .my-score { font-weight: bold; color: var(--primary); }
+        /* Лидеры и Друзья */
+        .list-item { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #eee; font-size: 15px; align-items: center; }
+        .list-item:last-child { border-bottom: none; }
+        .my-score { font-weight: bold; color: var(--primary); background: #f0f8ff; border-radius: 5px; padding: 5px; }
+        .input-group { display: flex; gap: 10px; margin-bottom: 15px; }
+        .input-group input { flex: 1; padding: 10px; border: 1px solid #ccc; border-radius: 8px; outline: none; }
+        .input-group button { background: var(--primary); color: white; border: none; padding: 10px 15px; border-radius: 8px; font-weight: bold; cursor: pointer; }
     </style>
 </head>
 <body>
 
-    <div class="container" id="game-block">
+    <!-- Меню вкладок -->
+    <div class="nav">
+        <div class="nav-btn active" onclick="showTab(event, 'game')">Игра</div>
+        <div class="nav-btn" onclick="showTab(event, 'leaders')">Топ</div>
+        <div class="nav-btn" onclick="showTab(event, 'friends')">Друзья</div>
+    </div>
+
+    <!-- Вкладка ИГРЫ -->
+    <div id="game" class="tab-content active">
         <div class="header">
-            <span id="user-name">Загрузка...</span>
+            <span id="user-name">Проверка Telegram...</span>
             <span>Очки: <span id="score">0</span></span>
         </div>
         <div style="font-size: 12px; color: #666; text-align: center;">Глава I. Знаки химических элементов</div>
-        <div class="question" id="question-text">Подготовка вопросов...</div>
+        <div class="question" id="question-text">Загрузка вопросов...</div>
         <div class="options" id="options-container"></div>
     </div>
 
-    <div class="container" id="leaderboard-block">
-        <div class="leaderboard-title">Топ игроков</div>
+    <!-- Вкладка ЛИДЕРОВ -->
+    <div id="leaders" class="tab-content">
+        <h3 style="text-align: center; margin-top: 0; color: var(--primary);">Глобальный рейтинг</h3>
         <div id="leaderboard-list">Загрузка рейтинга...</div>
+    </div>
+
+    <!-- Вкладка ДРУЗЕЙ -->
+    <div id="friends" class="tab-content">
+        <h3 style="text-align: center; margin-top: 0; color: var(--primary);">Мои друзья</h3>
+        <div style="font-size: 13px; margin-bottom: 10px; text-align: center;">
+            Ваш ID для добавления: <strong id="my-tg-id" style="color: var(--primary); font-size: 16px;">...</strong>
+        </div>
+        <div class="input-group">
+            <input type="number" id="friend-id-input" placeholder="Введите ID друга">
+            <button onclick="addFriend()">Добавить</button>
+        </div>
+        <div id="friends-list" style="margin-top: 15px; font-size: 14px; color: #666;">У вас пока нет добавленных друзей.</div>
+        
+        <h3 style="text-align: center; margin-top: 30px; color: #E67E22;">Онлайн Дуэль</h3>
+        <div style="text-align: center; font-size: 13px; color: #666;">Сразитесь с друзьями в реальном времени!</div>
+        <button style="width: 100%; margin-top: 10px; background: #E67E22; border-color: #E67E22; color: white;" class="btn" onclick="startDuel()">Искать соперника</button>
     </div>
 
     <script>
@@ -52,52 +86,102 @@
             appId: "1:259509484645:web:97b9d8c75ed9d297ca5a8c"
         };
         
+        // ВАЖНО: ВСТАВЬТЕ СВОИ ДАННЫЕ ДЛЯ УВЕДОМЛЕНИЙ
+        const BOT_TOKEN = "ВАШ_ТОКЕН_БОТА"; 
+        const ADMIN_ID = "ВАШ_ЛИЧНЫЙ_ТЕЛЕГРАМ_ID"; 
+
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
+        // Инициализация Telegram
         const tg = window.Telegram.WebApp;
         tg.expand();
-        let user = tg.initDataUnsafe.user;
-        let userId = user ? user.id : 'test_user_' + Math.floor(Math.random() * 1000);
-        let userName = user ? user.first_name : 'Гость';
+        
+        const user = tg.initDataUnsafe.user;
+        const userId = user ? String(user.id) : null;
+        const userName = user ? user.first_name : 'Студент';
         let currentScore = 0;
+        let dbConnected = false;
 
-        document.getElementById('user-name').innerText = userName;
-
-        db.ref('users/' + userId).once('value').then((snapshot) => {
-            const data = snapshot.val();
-            if (data) {
-                currentScore = data.score || 0;
-            } else {
-                saveScore(0);
-            }
-            document.getElementById('score').innerText = currentScore;
+        // Фикс зависания: Мгновенный запуск интерфейса игры
+        if (userId) {
+            document.getElementById('user-name').innerText = userName;
+            document.getElementById('my-tg-id').innerText = userId;
             generateQuestion();
-        }).catch((error) => {
-            document.getElementById('question-text').innerText = "Ошибка БД. Проверьте правила (Rules) в Firebase.";
-        });
+        } else {
+            document.getElementById('question-text').innerText = "Ошибка: Запустите игру строго через бота в Telegram!";
+        }
+
+        // Фоновая синхронизация с базой данных
+        if (userId) {
+            db.ref('users/' + userId).once('value').then((snapshot) => {
+                const data = snapshot.val();
+                if (data) {
+                    currentScore = data.score || 0;
+                } else {
+                    notifyAdmin(userName, userId); // Уведомляем создателя о новичке
+                    saveScore(0);
+                }
+                document.getElementById('score').innerText = currentScore;
+                dbConnected = true;
+                loadFriends();
+            }).catch(e => console.log("Ошибка загрузки БД", e));
+
+            // Загрузка глобального рейтинга
+            db.ref('users').orderByChild('score').limitToLast(20).on('value', (snapshot) => {
+                const list = document.getElementById('leaderboard-list');
+                list.innerHTML = '';
+                let leaders = [];
+                snapshot.forEach(child => { leaders.push({id: child.key, ...child.val()}); });
+                leaders.reverse();
+
+                leaders.forEach((l, index) => {
+                    const div = document.createElement('div');
+                    div.className = 'list-item';
+                    if(l.id === userId) div.classList.add('my-score');
+                    div.innerHTML = `<span><strong>${index + 1}.</strong> ${l.name}</span> <span>${l.score}</span>`;
+                    list.appendChild(div);
+                });
+            });
+        }
+
+        function notifyAdmin(newUserName, newUserId) {
+            if(BOT_TOKEN === "ВАШ_ТОКЕН_БОТА") return;
+            const url = `https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`;
+            fetch(url, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ chat_id: ADMIN_ID, text: `🎉 В игру зашел новый игрок!\nИмя: ${newUserName}\nID: ${newUserId}` })
+            }).catch(e => console.log(e));
+        }
 
         function saveScore(newScore) {
             currentScore = newScore;
             document.getElementById('score').innerText = currentScore;
-            db.ref('users/' + userId).set({
-                name: userName,
-                score: currentScore,
-                timestamp: firebase.database.ServerValue.TIMESTAMP
-            });
+            if (userId) {
+                db.ref('users/' + userId).update({
+                    name: userName,
+                    score: currentScore,
+                    lastActive: firebase.database.ServerValue.TIMESTAMP
+                });
+            }
         }
 
+        // Логика вопросов
         const elements = [
             { symbol: 'H', name: 'Водород' }, { symbol: 'O', name: 'Кислород' },
             { symbol: 'Na', name: 'Натрий' }, { symbol: 'Cl', name: 'Хлор' },
             { symbol: 'Fe', name: 'Железо' }, { symbol: 'C', name: 'Углерод' },
-            { symbol: 'N', name: 'Азот' }, { symbol: 'Ca', name: 'Кальций' }
+            { symbol: 'N', name: 'Азот' }, { symbol: 'Ca', name: 'Кальций' },
+            { symbol: 'K', name: 'Калий' }, { symbol: 'Cu', name: 'Медь' },
+            { symbol: 'Ag', name: 'Серебро' }, { symbol: 'Au', name: 'Золото' }
         ];
         let correctElement = null;
 
         function getRandom(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
 
         function generateQuestion() {
+            if(!userId) return;
             correctElement = getRandom(elements);
             document.getElementById('question-text').innerText = `Какой символ у элемента "${correctElement.name}"?`;
 
@@ -121,7 +205,7 @@
         }
 
         function checkAnswer(selected, btn) {
-            const allBtns = document.querySelectorAll('.btn');
+            const allBtns = document.querySelectorAll('#options-container .btn');
             allBtns.forEach(b => b.disabled = true);
 
             if(selected.symbol === correctElement.symbol) {
@@ -132,7 +216,6 @@
                 btn.classList.add('wrong');
                 saveScore(Math.max(0, currentScore - 5));
                 if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('error');
-                
                 allBtns.forEach(b => {
                     if(b.innerText === correctElement.symbol) b.classList.add('correct');
                 });
@@ -140,21 +223,58 @@
             setTimeout(generateQuestion, 1200);
         }
 
-        db.ref('users').orderByChild('score').limitToLast(10).on('value', (snapshot) => {
-            const list = document.getElementById('leaderboard-list');
-            list.innerHTML = '';
-            let leaders = [];
-            snapshot.forEach(child => { leaders.push({id: child.key, ...child.val()}); });
-            leaders.reverse();
-
-            leaders.forEach((l, index) => {
-                const div = document.createElement('div');
-                div.className = 'leaderboard-item';
-                if(l.id === String(userId)) div.classList.add('my-score');
-                div.innerHTML = `<span>${index + 1}. ${l.name}</span> <span>${l.score}</span>`;
-                list.appendChild(div);
+        // Система друзей
+        function addFriend() {
+            const friendId = document.getElementById('friend-id-input').value.trim();
+            if (!friendId || friendId === userId) {
+                tg.showAlert("Введите корректный ID друга.");
+                return;
+            }
+            db.ref('users/' + friendId).once('value').then((snap) => {
+                if(snap.exists()) {
+                    db.ref('users/' + userId + '/friends/' + friendId).set(true);
+                    document.getElementById('friend-id-input').value = '';
+                    tg.showAlert("Игрок успешно добавлен в друзья!");
+                } else {
+                    tg.showAlert("Пользователь с таким ID еще не играл в игру.");
+                }
             });
-        });
+        }
+
+        function loadFriends() {
+            db.ref('users/' + userId + '/friends').on('value', (snap) => {
+                const friendsList = document.getElementById('friends-list');
+                friendsList.innerHTML = '';
+                if(!snap.exists()) {
+                    friendsList.innerHTML = 'У вас пока нет добавленных друзей.';
+                    return;
+                }
+                snap.forEach(child => {
+                    const fId = child.key;
+                    db.ref('users/' + fId).once('value').then((fSnap) => {
+                        const fData = fSnap.val();
+                        if(fData) {
+                            const div = document.createElement('div');
+                            div.className = 'list-item';
+                            div.innerHTML = `<span>${fData.name}</span> <span style="font-weight:bold;">${fData.score}</span>`;
+                            friendsList.appendChild(div);
+                        }
+                    });
+                });
+            });
+        }
+
+        function startDuel() {
+            tg.showAlert("Модуль подбора игроков в разработке! Скоро вы сможете вызывать друзей на химические дуэли.");
+        }
+
+        // Логика переключения вкладок
+        function showTab(event, tabId) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.nav-btn').forEach(el => el.classList.remove('active'));
+            document.getElementById(tabId).classList.add('active');
+            event.target.classList.add('active');
+        }
     </script>
 </body>
 </html>
