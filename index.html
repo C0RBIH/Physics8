@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Химия 8 класс - Игра</title>
+    <style>
+        :root { --primary: #4A90E2; --bg: #F5F7FA; --text: #333333; --card: #FFFFFF; --success: #2ECC71; --error: #E74C3C; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: var(--bg); color: var(--text); margin: 0; padding: 10px; display: flex; flex-direction: column; align-items: center; }
+        .container { background-color: var(--card); border-radius: 12px; padding: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); max-width: 400px; width: 100%; text-align: center; box-sizing: border-box; margin-bottom: 20px; }
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; font-weight: bold; font-size: 14px;}
+        .streak { color: #F39C12; }
+        .question { font-size: 20px; font-weight: bold; margin: 20px 0; color: var(--primary); }
+        .options { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .btn { background-color: var(--bg); border: 2px solid var(--primary); color: var(--primary); padding: 12px; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; transition: 0.2s; }
+        .btn:hover { background-color: var(--primary); color: white; }
+        .btn.correct { background-color: var(--success); border-color: var(--success); color: white; }
+        .btn.wrong { background-color: var(--error); border-color: var(--error); color: white; }
+        input { width: 100%; padding: 10px; margin-bottom: 10px; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box; }
+        .hidden { display: none; }
+    </style>
+</head>
+<body>
+
+    <div class="container" id="auth-block">
+        <h3>Вход в систему</h3>
+        <input type="text" id="login-input" placeholder="Введите ваш никнейм">
+        <button class="btn" style="width: 100%;" onclick="login()">Играть</button>
+    </div>
+
+    <div class="container hidden" id="game-block">
+        <div class="header">
+            <span>Профиль: <span id="current-user" style="color:var(--primary)"></span><br>Очки: <span id="score">0</span></span>
+            <span class="streak">Огонек: <span id="streak">1</span> дн.</span>
+        </div>
+
+        <div style="font-size: 14px; color: #666;">Глава I. Знаки химических элементов</div>
+        <div class="question" id="question-text">Загрузка...</div>
+        <div class="options" id="options-container"></div>
+    </div>
+
+    <script>
+        let currentUser = localStorage.getItem('username');
+        let score = parseInt(localStorage.getItem('score')) || 0;
+        let currentCorrectElement = null;
+
+        const elements = [
+            { symbol: 'H', name: 'Водород' }, { symbol: 'O', name: 'Кислород' },
+            { symbol: 'Na', name: 'Натрий' }, { symbol: 'Cl', name: 'Хлор' },
+            { symbol: 'Fe', name: 'Железо' }, { symbol: 'C', name: 'Углерод' },
+            { symbol: 'N', name: 'Азот' }, { symbol: 'Ca', name: 'Кальций' }
+        ];
+
+        if(currentUser) startGame();
+
+        function login() {
+            const input = document.getElementById('login-input').value.trim();
+            if(!input) return;
+            currentUser = input;
+            localStorage.setItem('username', currentUser);
+            localStorage.setItem('score', score);
+            startGame();
+        }
+
+        function startGame() {
+            document.getElementById('auth-block').classList.add('hidden');
+            document.getElementById('game-block').classList.remove('hidden');
+            document.getElementById('current-user').innerText = "@" + currentUser;
+            document.getElementById('score').innerText = score;
+            generateQuestion();
+        }
+
+        function getRandomElement(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+
+        function generateQuestion() {
+            currentCorrectElement = getRandomElement(elements);
+            document.getElementById('question-text').innerText = `Символ элемента "${currentCorrectElement.name}"?`;
+
+            let options = [currentCorrectElement];
+            while(options.length < 4) {
+                let randomOption = getRandomElement(elements);
+                if(!options.includes(randomOption)) options.push(randomOption);
+            }
+            options.sort(() => Math.random() - 0.5);
+
+            const container = document.getElementById('options-container');
+            container.innerHTML = '';
+            
+            options.forEach(opt => {
+                const btn = document.createElement('button');
+                btn.className = 'btn';
+                btn.innerText = opt.symbol;
+                btn.onclick = () => checkAnswer(opt, btn);
+                container.appendChild(btn);
+            });
+        }
+
+        function checkAnswer(selected, btnElement) {
+            const allBtns = document.querySelectorAll('.btn');
+            allBtns.forEach(b => b.disabled = true);
+
+            if(selected.symbol === currentCorrectElement.symbol) {
+                btnElement.classList.add('correct');
+                score += 10;
+            } else {
+                btnElement.classList.add('wrong');
+                score = Math.max(0, score - 5);
+            }
+
+            localStorage.setItem('score', score);
+            document.getElementById('score').innerText = score;
+            setTimeout(generateQuestion, 1000);
+        }
+    </script>
+</body>
+</html>
